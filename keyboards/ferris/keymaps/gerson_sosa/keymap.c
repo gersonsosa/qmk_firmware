@@ -1,13 +1,12 @@
 #include QMK_KEYBOARD_H
 
-// set microcontroller led off
-void keyboard_pre_init_user(void) {
-    // Set our LED pin as output
-    setPinOutput(24);
-    // Turn the LED off
-    // (Due to technical reasons, high is off and low is on)
-    writePinHigh(24);
-}
+enum layers {
+    _BASE,
+    _SYMBOLS,
+    _NUMBERS,
+    _ARROWS,
+    _CONFIG,
+};
 
 // Tap Dance declarations
 enum {
@@ -23,6 +22,7 @@ enum {
 // from any layer to base layer
 enum kc_trns_to_base {
     FALL_BASE = SAFE_RANGE,
+    CMD_BASE,
 };
 
 typedef struct {
@@ -58,9 +58,11 @@ void tap_dance_tap_hold_reset(tap_dance_state_t *state, void *user_data) {
     }
 }
 
-// TODO: can this be implemented with ACTION_TAP_DANCE_FN_ADVANCED_* see https://docs.qmk.fm/features/tap_dance#implementation
-#define ACTION_TAP_DANCE_TAP_HOLD(tap, hold) \
-    { .fn = {NULL, tap_dance_tap_hold_finished, tap_dance_tap_hold_reset}, .user_data = (void *)&((tap_dance_tap_hold_t){tap, hold, 0}), }
+#define ACTION_TAP_DANCE_TAP_HOLD(tap, hold)                                        \
+    {                                                                               \
+        .fn        = {NULL, tap_dance_tap_hold_finished, tap_dance_tap_hold_reset}, \
+        .user_data = (void *)&((tap_dance_tap_hold_t){tap, hold, 0}),               \
+    }
 
 // Tap Dance definitions
 tap_dance_action_t tap_dance_actions[] = {
@@ -82,8 +84,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 layer_clear();
             }
             break;
+        case CMD_BASE:
+            if (record->event.pressed) {
+                register_mods(MOD_BIT(KC_LGUI));
+            } else {
+                unregister_mods(MOD_BIT(KC_LGUI));
+                layer_clear();
+            }
+            return false;
         case TD(DOT_SCR): // list all tap dance keycodes with tap-hold configurations
-            /* when one of these keys is released after the OSL tap and release
+            /* NOTE: when one of these keys is released after the OSL/OSM tap and release
              * within **TAPPING_TERM** two chars are outputted for example `..`
              * this is not caused by permissive hold, the same happens without it.
              * my theory is that OSL makes the tap press and release trigger
@@ -97,28 +107,48 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-void oneshot_mods_changed_user(uint8_t mods) {
-    if (mods & MOD_MASK_ALT) {
-        layer_clear(); // goes back to the base layer after OSM(*ALT)
-    }
+void keyboard_pre_init_user(void) {
+    // set microcontroller led off
+    setPinOutput(LIATRIS_ON_LED_PIN);
+    writePinHigh(LIATRIS_ON_LED_PIN);
 }
 
-layer_state_t layer_state_set_user(layer_state_t state) {
-    uint8_t current_layer = get_highest_layer(state);
-    if (current_layer > 0) {
-        setPinOutput(24);
-        writePinLow(24);
-    } else {
-        setPinOutput(24);
-        writePinHigh(24);
+void keyboard_post_init_user(void) {
+    rgblight_enable_noeeprom();
+    rgblight_sethsv_noeeprom(HSV_BLACK);
+    rgblight_mode_noeeprom(RGBLIGHT_MODE_STATIC_LIGHT);
+}
+
+void housekeeping_task_user(void) {
+    switch (get_highest_layer(layer_state | default_layer_state)) {
+        case 0:
+            rgblight_setrgb_at(RGB_BLACK, 0);
+            rgblight_setrgb_at(RGB_BLACK, 1);
+            break;
+        case 1:
+            rgblight_setrgb_at(RGB_BLUE, 0);
+            rgblight_setrgb_at(RGB_BLUE, 1);
+            break;
+        case 2:
+            rgblight_setrgb_at(RGB_BLACK, 0);
+            rgblight_setrgb_at(RGB_GREEN, 1);
+            break;
+        case 3:
+            rgblight_setrgb_at(RGB_PURPLE, 0);
+            rgblight_setrgb_at(RGB_PURPLE, 1);
+            break;
+        case 4:
+            rgblight_setrgb_at(RGB_RED, 0);
+            rgblight_setrgb_at(RGB_RED, 1);
+            break;
     }
-    return state;
 }
 
 const key_override_t grv_tilde  = ko_make_basic(MOD_MASK_GUI, KC_GRV, S(KC_GRV));
 const key_override_t eur_dollar = ko_make_basic(MOD_MASK_GUI, S(A(KC_2)), S(KC_4));
+const key_override_t alt_bspc   = ko_make_basic(MOD_MASK_ALT, KC_L, A(KC_BSPC));
 
-const key_override_t *key_overrides[] = {&grv_tilde, &eur_dollar};
+const key_override_t *key_overrides[] = {&grv_tilde, &eur_dollar, &alt_bspc};
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Layer 0
@@ -130,14 +160,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // │ ' `   │   Q   │   J   │   K   │   X   │   │   B   │   M   │   W   │   V   │   Z   │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │L󰘶/ 󱁐  │      │   │  L󰘴   │ OSL(1)│
+    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │ OSL(1)│
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [0] = LAYOUT_split_3x5_2(
-            TD(SCLN_MINS), TD(COMM_UNDS), TD(DOT_EXCL), KC_P, KC_Y, KC_F, KC_G, KC_C, KC_R, KC_L,
-            KC_A, KC_O, KC_E, KC_U, KC_I, KC_D, KC_H, KC_T, KC_N, KC_S,
-            TD(QUOT_GRV), KC_Q, KC_J, KC_K, KC_X, KC_B, KC_M, KC_W, KC_V, KC_Z,
-            LSFT_T(KC_SPC), OSM(MOD_LGUI), OSM(MOD_LCTL), OSL(1)),
+    [_BASE] = LAYOUT_split_3x5_2(TD(SCLN_MINS), TD(COMM_UNDS), TD(DOT_EXCL), KC_P, KC_Y, KC_F, KC_G, KC_C, KC_R, KC_L, KC_A, KC_O, KC_E, KC_U, KC_I, KC_D, KC_H, KC_T, KC_N, KC_S, TD(QUOT_GRV), KC_Q, KC_J, KC_K, KC_X, KC_B, KC_M, KC_W, KC_V, KC_Z, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), OSL(1)),
     // Layer 1
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │  ESC  │ TRNS  │ . scr │   @   │   =   │   │   -   │   %   │   |   │   *   │ BSPC  │
@@ -147,13 +173,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // │ `  ~  │ TRNS  │   !   │   &   │   +   │   │   #   │   ?   │   /   │   \   │ TO(3) │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │ TO(0) │      │   │   ⌥   │ TO(2) │
+    //                         │  0/  │ BASE  │   │   ⌥   │ TO(2) │
     //                         └───────┴───────┘   └───────┴───────┘
-    [1] = LAYOUT_split_3x5_2(
-            KC_ESC, KC_COMM, TD(DOT_SCR), KC_AT, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_ASTR, KC_BSPC,
-            KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT,
-            KC_GRV, KC_TRNS, KC_EXLM, KC_AMPR, KC_PLUS, KC_HASH, KC_QUES, KC_SLSH, KC_BSLS, TO(3),
-            TO(0), OSM(MOD_LGUI), OSM(MOD_LALT), TO(2)),
+    [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_COMM, TD(DOT_SCR), KC_AT, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_ASTR, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_TRNS, KC_EXLM, KC_AMPR, KC_PLUS, KC_HASH, KC_QUES, KC_SLSH, KC_BSLS, TO(3), FALL_BASE, SFT_T(KC_SPC), OSM(MOD_LALT), TO(2)),
     //
     // Layer 2
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
@@ -164,13 +186,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // │  BASE │  BASE │  BASE │  BASE │   *   │   │   /   │   7   │   8   │   9   │   0   │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │L󰘶 / 󱁐 │      │   │  R󰘴   │  BASE │
+    //                         │  0/  │ L󰘶/ 󱁐 │   │  R󰘴   │  BASE │
     //                         └───────┴───────┘   └───────┴───────┘
-    [2] = LAYOUT_split_3x5_2(
-            KC_ESC, KC_TRNS, KC_TRNS, FALL_BASE, KC_EQL, KC_MINS, KC_1, KC_2, KC_3, KC_BSPC,
-            KC_TAB, FALL_BASE, FALL_BASE, FALL_BASE, S(A(KC_2)), FALL_BASE, KC_4, KC_5, KC_6, KC_ENT,
-            FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ASTR, KC_PSLS, KC_7, KC_8, KC_9, KC_0,
-            SFT_T(KC_SPC), OSM(MOD_LGUI), OSM(MOD_RCTL), FALL_BASE),
+    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_TRNS, KC_TRNS, FALL_BASE, KC_EQL, KC_MINS, KC_1, KC_2, KC_3, KC_BSPC, KC_TAB, FALL_BASE, FALL_BASE, FALL_BASE, S(A(KC_2)), FALL_BASE, KC_4, KC_5, KC_6, KC_ENT, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ASTR, KC_PSLS, KC_7, KC_8, KC_9, KC_0, CMD_BASE, SFT_T(KC_SPC), KC_RCTL, FALL_BASE),
     //
     // Layer 3
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
@@ -181,13 +199,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // │ TG(4) │ KC_Q  │  BASE │  BASE │ G(C)  │   │ G(V)  │ PGDN  │ PGUP  │RSG(Z) │ G(Z)  │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │  SPC  │      │   │ RALT  │  BASE │
+    //                         │  0/  │ L󰘶/ 󱁐 │   │ RALT  │  BASE │
     //                         └───────┴───────┘   └───────┴───────┘
-    [3] = LAYOUT_split_3x5_2(
-            KC_ESC, KC_MRWD, KC_MFFD, KC_MPLY, KC_VOLU, LGUI(KC_LBRC), LGUI(KC_RBRC), RCS(KC_TAB), C(KC_TAB), KC_BSPC,
-            KC_TAB, OSM(MOD_LCTL), OSM(MOD_LALT), OSM(MOD_LSFT), KC_VOLD, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_ENT,
-            TG(4), KC_Q, FALL_BASE, FALL_BASE, LGUI(KC_C), LGUI(KC_V), KC_PGDN, KC_PGUP, RSG(KC_Z), LGUI(KC_Z),
-            KC_SPC, OSM(MOD_LGUI), OSM(MOD_RALT), FALL_BASE),
+    [_ARROWS] = LAYOUT_split_3x5_2(KC_ESC, KC_MRWD, KC_MFFD, KC_MPLY, KC_VOLU, LGUI(KC_LBRC), LGUI(KC_RBRC), RCS(KC_TAB), C(KC_TAB), KC_BSPC, KC_TAB, OSM(MOD_LCTL), OSM(MOD_LALT), OSM(MOD_LSFT), KC_VOLD, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_ENT, TG(4), KC_Q, FALL_BASE, FALL_BASE, LGUI(KC_C), LGUI(KC_V), KC_PGDN, KC_PGUP, RSG(KC_Z), LGUI(KC_Z), CMD_BASE, SFT_T(KC_SPC), KC_RALT, FALL_BASE),
     //
     // Layer 4
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
@@ -201,12 +215,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //                         │ TRNS  │ TRNS  │   │ TRNS  │ TRNS  │
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [4] = LAYOUT_split_3x5_2(
-            KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC,
-            KC_TRNS, KC_MS_WH_DOWN, KC_BTN2, KC_BTN1, KC_MS_WH_UP, KC_MS_L, KC_MS_D, KC_MS_U, KC_MS_R, KC_ENT,
-            TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS,
-            KC_TRNS, KC_TRNS, KC_TRNS, FALL_BASE)
-};
+    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, KC_MS_WH_DOWN, KC_BTN2, KC_BTN1, KC_MS_WH_UP, KC_MS_L, KC_MS_D, KC_MS_U, KC_MS_R, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, FALL_BASE)};
 
 #if defined(ENCODER_ENABLE) && defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {

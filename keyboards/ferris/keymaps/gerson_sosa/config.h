@@ -38,6 +38,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define QUICK_TAP_TERM 120
 #define ONESHOT_TAP_TOGGLE 2
 
+#define LIATRIS_ON_LED_PIN 24
+
+#undef WS2812_DI_PIN
+#define WS2812_DI_PIN 25
+#undef RGBLIGHT_LED_COUNT
+#define RGBLIGHT_LED_COUNT 2
+#undef RGBLED_SPLIT
+#define RGBLED_SPLIT {1, 1}
+#define SPLIT_LAYER_STATE_ENABLE
+
 // Underglow configuration
 #ifdef RGBLIGHT_ENABLE
 #    define RGBLIGHT_EFFECT_BREATHING
