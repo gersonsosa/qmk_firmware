@@ -23,6 +23,7 @@ enum {
 enum kc_trns_to_base {
     FALL_BASE = SAFE_RANGE,
     CMD_BASE,
+    ALT_BASE,
 };
 
 typedef struct {
@@ -89,6 +90,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 register_mods(MOD_BIT(KC_LGUI));
             } else {
                 unregister_mods(MOD_BIT(KC_LGUI));
+                layer_clear();
+            }
+            return false;
+        case ALT_BASE:
+            if (record->event.pressed) {
+                register_mods(MOD_BIT(KC_LALT));
+            } else {
+                unregister_mods(MOD_BIT(KC_LALT));
                 layer_clear();
             }
             return false;
@@ -188,7 +197,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //                         ┌───────┬───────┐   ┌───────┬───────┐
     //                         │  0/  │ L󰘶/ 󱁐 │   │  R󰘴   │  BASE │
     //                         └───────┴───────┘   └───────┴───────┘
-    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_TRNS, KC_TRNS, FALL_BASE, KC_EQL, KC_MINS, KC_1, KC_2, KC_3, KC_BSPC, KC_TAB, FALL_BASE, FALL_BASE, FALL_BASE, S(A(KC_2)), FALL_BASE, KC_4, KC_5, KC_6, KC_ENT, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ASTR, KC_PSLS, KC_7, KC_8, KC_9, KC_0, CMD_BASE, SFT_T(KC_SPC), KC_RCTL, FALL_BASE),
+    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_TRNS, KC_TRNS, FALL_BASE, KC_EQL, KC_MINS, KC_1, KC_2, KC_3, KC_BSPC, KC_TAB, FALL_BASE, FALL_BASE, FALL_BASE, S(A(KC_2)), FALL_BASE, KC_4, KC_5, KC_6, KC_ENT, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ASTR, KC_PSLS, KC_7, KC_8, KC_9, KC_0, ALT_BASE, SFT_T(KC_SPC), KC_RCTL, FALL_BASE),
     //
     // Layer 3
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
@@ -215,7 +224,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //                         │ TRNS  │ TRNS  │   │ TRNS  │ TRNS  │
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, KC_MS_WH_DOWN, KC_BTN2, KC_BTN1, KC_MS_WH_UP, KC_MS_L, KC_MS_D, KC_MS_U, KC_MS_R, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, FALL_BASE)};
+    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, MS_WHLD, MS_BTN2, MS_BTN1, MS_WHLU, MS_LEFT, MS_DOWN, MS_UP, MS_RGHT, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, FALL_BASE)};
 
 #if defined(ENCODER_ENABLE) && defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
