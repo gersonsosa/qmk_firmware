@@ -6,17 +6,13 @@ enum layers {
     _NUMBERS,
     _ARROWS,
     _CONFIG,
+    _BASE_CO,
 };
 
 // Tap Dance declarations
 enum {
-    SCLN_MINS,
-    COMM_UNDS,
-    DOT_EXCL,
-    DOT_SCR,
     CIRC_HOME,
     DLR_END,
-    QUOT_GRV,
 };
 
 // from any layer to base layer
@@ -24,6 +20,7 @@ enum kc_trns_to_base {
     FALL_BASE = SAFE_RANGE,
     CMD_BASE,
     ALT_BASE,
+    ALT_FALL_BASE,
 };
 
 typedef struct {
@@ -67,18 +64,11 @@ void tap_dance_tap_hold_reset(tap_dance_state_t *state, void *user_data) {
 
 // Tap Dance definitions
 tap_dance_action_t tap_dance_actions[] = {
-    [SCLN_MINS] = ACTION_TAP_DANCE_DOUBLE(KC_SCLN, KC_MINS),        //
-    [COMM_UNDS] = ACTION_TAP_DANCE_DOUBLE(KC_COMM, KC_UNDS),        //
-    [DOT_EXCL]  = ACTION_TAP_DANCE_DOUBLE(KC_DOT, KC_EXLM),         //
-    [CIRC_HOME] = ACTION_TAP_DANCE_DOUBLE(S(KC_6), KC_HOME),        //
-    [DLR_END]   = ACTION_TAP_DANCE_DOUBLE(S(KC_4), KC_END),         //
-    [QUOT_GRV]  = ACTION_TAP_DANCE_DOUBLE(KC_QUOT, KC_GRV),         //
-    [DOT_SCR]   = ACTION_TAP_DANCE_TAP_HOLD(KC_DOT, C(S(G(KC_4)))), //
+    [CIRC_HOME] = ACTION_TAP_DANCE_DOUBLE(S(KC_6), KC_HOME), //
+    [DLR_END]   = ACTION_TAP_DANCE_DOUBLE(S(KC_4), KC_END),  //
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    tap_dance_action_t *action;
-
     switch (keycode) {
         case FALL_BASE:
             if (record->event.pressed) {
@@ -101,17 +91,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 layer_clear();
             }
             return false;
-        case TD(DOT_SCR): // list all tap dance keycodes with tap-hold configurations
-            /* NOTE: when one of these keys is released after the OSL/OSM tap and release
-             * within **TAPPING_TERM** two chars are outputted for example `..`
-             * this is not caused by permissive hold, the same happens without it.
-             * my theory is that OSL makes the tap press and release trigger
-             * this function twice */
-            action = &tap_dance_actions[QK_TAP_DANCE_GET_INDEX(keycode)];
-            if (!record->event.pressed && action->state.count && !action->state.finished) {
-                tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)action->user_data;
-                tap_code16(tap_hold->tap);
+        case ALT_FALL_BASE:
+            if (record->event.pressed) {
+                register_mods(MOD_BIT(KC_LALT));
+                layer_clear();
+            } else {
+                unregister_mods(MOD_BIT(KC_LALT));
             }
+            return false;
+            // TODO: add a default case to return to the base layer from the first unless the keypress is backspace
     }
     return true;
 }
@@ -130,25 +118,29 @@ void keyboard_post_init_user(void) {
 
 void housekeeping_task_user(void) {
     switch (get_highest_layer(layer_state | default_layer_state)) {
-        case 0:
+        case _BASE:
             rgblight_setrgb_at(RGB_BLACK, 0);
             rgblight_setrgb_at(RGB_BLACK, 1);
             break;
-        case 1:
+        case _SYMBOLS:
             rgblight_setrgb_at(RGB_BLUE, 0);
             rgblight_setrgb_at(RGB_BLUE, 1);
             break;
-        case 2:
-            rgblight_setrgb_at(RGB_BLACK, 0);
-            rgblight_setrgb_at(RGB_GREEN, 1);
+        case _NUMBERS:
+            rgblight_setrgb_at(RGB_GREEN, 0);
+            rgblight_setrgb_at(RGB_BLACK, 1);
             break;
-        case 3:
+        case _ARROWS:
             rgblight_setrgb_at(RGB_PURPLE, 0);
             rgblight_setrgb_at(RGB_PURPLE, 1);
             break;
-        case 4:
+        case _CONFIG:
             rgblight_setrgb_at(RGB_RED, 0);
             rgblight_setrgb_at(RGB_RED, 1);
+            break;
+        case _BASE_CO:
+            rgblight_setrgb_at(RGB_PINK, 0);
+            rgblight_setrgb_at(RGB_PINK, 1);
             break;
     }
 }
@@ -160,59 +152,54 @@ const key_override_t alt_bspc   = ko_make_basic(MOD_MASK_ALT, KC_L, A(KC_BSPC));
 const key_override_t *key_overrides[] = {&grv_tilde, &eur_dollar, &alt_bspc};
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    // Layer 0
+    // QWERTY
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
-    // │ ; -   │ , _   │ . !   │   P   │   Y   │   │   F   │   G   │   C   │   R   │   L   │
+    // │   Q   │   W   │   E   │   R   │   T   │   │   Y   │   U   │   I   │   O   │   P   │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │   A   │   O   │   E   │   U   │   I   │   │   D   │   H   │   T   │   N   │   S   │
+    // │   A   │   S   │   D   │   F   │   G   │   │   H   │   J   │   K   │   L   │   ;   │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │ ' `   │   Q   │   J   │   K   │   X   │   │   B   │   M   │   W   │   V   │   Z   │
+    // │   Z   │   X   │   C   │   V   │   B   │   │   N   │   M   │   ,   │   .   │   /   │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │ OSL(1)│
+    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │Symbols│
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [_BASE] = LAYOUT_split_3x5_2(TD(SCLN_MINS), TD(COMM_UNDS), TD(DOT_EXCL), KC_P, KC_Y, KC_F, KC_G, KC_C, KC_R, KC_L, KC_A, KC_O, KC_E, KC_U, KC_I, KC_D, KC_H, KC_T, KC_N, KC_S, TD(QUOT_GRV), KC_Q, KC_J, KC_K, KC_X, KC_B, KC_M, KC_W, KC_V, KC_Z, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), OSL(1)),
-    // Layer 1
+    [_BASE] = LAYOUT_split_3x5_2(KC_Q, KC_W, KC_E, KC_R, KC_T, KC_Y, KC_U, KC_I, KC_O, KC_P, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, KC_SCLN, KC_Z, KC_X, KC_C, KC_V, KC_B, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), OSL(_SYMBOLS)),
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
-    // │  ESC  │ TRNS  │ . scr │   @   │   =   │   │   -   │   %   │   |   │   *   │ BSPC  │
+    // │  ESC  │   !   │   @   │   #   │   =   │   │   -   │   %   │   |   │   \   │ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │   {   │   [   │   (   │ ^ 🏠  │   │ $ 🔚  │   )   │   ]   │   }   │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │ `  ~  │ TRNS  │   !   │   &   │   +   │   │   #   │   ?   │   /   │   \   │ TO(3) │
+    // │ `  ~  │   '   │   "   │   &   │   *   │   │       │       │       │       │ TO(3) │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │  0/  │ BASE  │   │   ⌥   │ TO(2) │
+    //                         │      │ L󰘶/ 󱁐 │   │  ⌥->B │Numbers│
     //                         └───────┴───────┘   └───────┴───────┘
-    [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_COMM, TD(DOT_SCR), KC_AT, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_ASTR, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_TRNS, KC_EXLM, KC_AMPR, KC_PLUS, KC_HASH, KC_QUES, KC_SLSH, KC_BSLS, TO(3), FALL_BASE, SFT_T(KC_SPC), OSM(MOD_LALT), TO(2)),
+    [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_EXLM, KC_AT, KC_HASH, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_BSLS, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_QUOT, KC_DQT, KC_AMPR, KC_ASTR, KC_NO, KC_NO, KC_NO, KC_NO, TO(_ARROWS), CMD_BASE, KC_LSFT, ALT_FALL_BASE, TO(_NUMBERS)),
     //
-    // Layer 2
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
-    // │  ESC  │ TRNS  │ TRNS  │  BASE │   =   │   │   -   │   1   │   2   │   3   │ BSPC  │
+    // │  ESC  │   7   │   8   │   9   │   =   │   │   -   │  BASE │  BASE │  BASE │ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │  TAB  │  BASE │  BASE │  BASE │  €/$  │   │  BASE │   4   │   5   │   6   │ ENTER │
+    // │  TAB  │   4   │   5   │   6   │  €/$  │   │  BASE │  BASE │  BASE │  BASE │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │  BASE │  BASE │  BASE │  BASE │   *   │   │   /   │   7   │   8   │   9   │   0   │
+    // │   0   │   1   │   2   │   3   │   *   │   │   /   │  BASE │   ,   │   .   │  L^   │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │  0/  │ L󰘶/ 󱁐 │   │  R󰘴   │  BASE │
+    //                         │  0/  │ L󰘶/ 󱁐 │   │   ⌥   │  BASE │
     //                         └───────┴───────┘   └───────┴───────┘
-    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_TRNS, KC_TRNS, FALL_BASE, KC_EQL, KC_MINS, KC_1, KC_2, KC_3, KC_BSPC, KC_TAB, FALL_BASE, FALL_BASE, FALL_BASE, S(A(KC_2)), FALL_BASE, KC_4, KC_5, KC_6, KC_ENT, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ASTR, KC_PSLS, KC_7, KC_8, KC_9, KC_0, ALT_BASE, SFT_T(KC_SPC), KC_RCTL, FALL_BASE),
+    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_7, KC_8, KC_9, KC_EQL, KC_MINS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BSPC, KC_TAB, KC_4, KC_5, KC_6, KC_0, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ENT, KC_0, KC_1, KC_2, KC_3, KC_ASTR, KC_PSLS, KC_TRNS, KC_COMM, KC_DOT, OSM(MOD_LCTL), CMD_BASE, SFT_T(KC_SPC), ALT_BASE, FALL_BASE),
     //
-    // Layer 3
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │  ESC  │ MRWD  │ MFFD  │ MPLY  │ VOLU  │   │ G([)  │ G(])  │C(TB)  │RC(TAB)│ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │ LCTRL │ LALT  │ LSHFT │ VOLD  │   │ LEFT  │ DOWN  │  UP   │ RIGHT │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │ TG(4) │ KC_Q  │  BASE │  BASE │ G(C)  │   │ G(V)  │ PGDN  │ PGUP  │RSG(Z) │ G(Z)  │
+    // │ TG(4) │ BASE  │  BASE │  BASE │ G(C)  │   │ G(V)  │ PGDN  │ PGUP  │RSG(Z) │ G(Z)  │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
     //                         │  0/  │ L󰘶/ 󱁐 │   │ RALT  │  BASE │
     //                         └───────┴───────┘   └───────┴───────┘
-    [_ARROWS] = LAYOUT_split_3x5_2(KC_ESC, KC_MRWD, KC_MFFD, KC_MPLY, KC_VOLU, LGUI(KC_LBRC), LGUI(KC_RBRC), RCS(KC_TAB), C(KC_TAB), KC_BSPC, KC_TAB, OSM(MOD_LCTL), OSM(MOD_LALT), OSM(MOD_LSFT), KC_VOLD, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_ENT, TG(4), KC_Q, FALL_BASE, FALL_BASE, LGUI(KC_C), LGUI(KC_V), KC_PGDN, KC_PGUP, RSG(KC_Z), LGUI(KC_Z), CMD_BASE, SFT_T(KC_SPC), KC_RALT, FALL_BASE),
-    //
-    // Layer 4
+    [_ARROWS] = LAYOUT_split_3x5_2(KC_ESC, KC_MRWD, KC_MFFD, KC_MPLY, KC_VOLU, LGUI(KC_LBRC), LGUI(KC_RBRC), RCS(KC_TAB), C(KC_TAB), KC_BSPC, KC_TAB, OSM(MOD_LCTL), OSM(MOD_LALT), OSM(MOD_LSFT), KC_VOLD, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_ENT, TG(_CONFIG), FALL_BASE, FALL_BASE, FALL_BASE, LGUI(KC_C), LGUI(KC_V), KC_PGDN, KC_PGUP, RSG(KC_Z), LGUI(KC_Z), CMD_BASE, SFT_T(KC_SPC), KC_RALT, FALL_BASE),
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │ TRNS  │ TRNS  │ TRNS  │ TRNS  │ TRNS  │   │ BOOTL │  NO   │  NO   │  NO   │ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
@@ -221,10 +208,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // │ TG(4) │  NO   │  NO   │  NO   │DB_TOGG│   │  NO   │  NO   │  NO   │  NO   │ TRNS  │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │ TRNS  │ TRNS  │   │ TRNS  │ TRNS  │
+    //                         │ TRNS  │ TO(5) │   │FALL_B │FALL_B │
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, MS_WHLD, MS_BTN2, MS_BTN1, MS_WHLU, MS_LEFT, MS_DOWN, MS_UP, MS_RGHT, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, FALL_BASE)};
+    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, MS_WHLD, MS_BTN2, MS_BTN1, MS_WHLU, MS_LEFT, MS_DOWN, MS_UP, MS_RGHT, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, DF(_BASE_CO), FALL_BASE, FALL_BASE),
+    // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
+    // │   Q   │   W   │   F   │   P   │   B   │   │   J   │   L   │   U   │   Y   │   ;   │
+    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
+    // │   A   │   R   │   S   │   T   │   G   │   │   M   │   N   │   E   │   I   │   O   │
+    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
+    // │   Z   │   X   │   C   │   D   │   V   │   │   K   │   H   │   ,   │   .   │   /   │
+    // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
+    //                         ┌───────┬───────┐   ┌───────┬───────┐
+    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │ OSL(1)│
+    //                         └───────┴───────┘   └───────┴───────┘
+    //
+    [_BASE_CO] = LAYOUT_split_3x5_2(KC_Q, KC_W, KC_F, KC_P, KC_B, KC_J, KC_L, KC_U, KC_Y, KC_SCLN, KC_A, KC_R, KC_S, KC_T, KC_G, KC_M, KC_N, KC_E, KC_I, KC_O, KC_Z, KC_X, KC_C, KC_D, KC_V, KC_K, KC_H, KC_COMM, KC_DOT, KC_SLSH, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), DF(_BASE))};
 
 #if defined(ENCODER_ENABLE) && defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
