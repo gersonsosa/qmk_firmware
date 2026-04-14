@@ -106,8 +106,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 void keyboard_pre_init_user(void) {
     // set microcontroller led off
-    setPinOutput(LIATRIS_ON_LED_PIN);
-    writePinHigh(LIATRIS_ON_LED_PIN);
+    gpio_set_pin_output(LIATRIS_ON_LED_PIN);
+    gpio_write_pin_high(LIATRIS_ON_LED_PIN);
 }
 
 void keyboard_post_init_user(void) {
@@ -166,6 +166,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //
     [_BASE] = LAYOUT_split_3x5_2(KC_Q, KC_W, KC_E, KC_R, KC_T, KC_Y, KC_U, KC_I, KC_O, KC_P, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, KC_SCLN, KC_Z, KC_X, KC_C, KC_V, KC_B, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), OSL(_SYMBOLS)),
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
+    // │   Q   │   W   │   F   │   P   │   B   │   │   J   │   L   │   U   │   Y   │   ;   │
+    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
+    // │   A   │   R   │   S   │   T   │   G   │   │   M   │   N   │   E   │   I   │   O   │
+    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
+    // │   Z   │   X   │   C   │   D   │   V   │   │   K   │   H   │   ,   │   .   │   /   │
+    // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
+    //                         ┌───────┬───────┐   ┌───────┬───────┐
+    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │ OSL(1)│
+    //                         └───────┴───────┘   └───────┴───────┘
+    //
+    [_BASE_CO] = LAYOUT_split_3x5_2(KC_Q, KC_W, KC_F, KC_P, KC_B, KC_J, KC_L, KC_U, KC_Y, KC_SCLN, KC_A, KC_R, KC_S, KC_T, KC_G, KC_M, KC_N, KC_E, KC_I, KC_O, KC_Z, KC_X, KC_C, KC_D, KC_V, KC_K, KC_H, KC_COMM, KC_DOT, KC_SLSH, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), OSL(_SYMBOLS)),
+    // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │  ESC  │   !   │   @   │   #   │   =   │   │   -   │   %   │   |   │   \   │ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │   {   │   [   │   (   │ ^ 🏠  │   │ $ 🔚  │   )   │   ]   │   }   │ ENTER │
@@ -211,19 +223,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //                         │ TRNS  │ TO(5) │   │FALL_B │FALL_B │
     //                         └───────┴───────┘   └───────┴───────┘
     //
-    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, MS_WHLD, MS_BTN2, MS_BTN1, MS_WHLU, MS_LEFT, MS_DOWN, MS_UP, MS_RGHT, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, DF(_BASE_CO), FALL_BASE, FALL_BASE),
-    // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
-    // │   Q   │   W   │   F   │   P   │   B   │   │   J   │   L   │   U   │   Y   │   ;   │
-    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │   A   │   R   │   S   │   T   │   G   │   │   M   │   N   │   E   │   I   │   O   │
-    // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │   Z   │   X   │   C   │   D   │   V   │   │   K   │   H   │   ,   │   .   │   /   │
-    // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
-    //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │      │ L󰘶/ 󱁐 │   │  L󰘴   │ OSL(1)│
-    //                         └───────┴───────┘   └───────┴───────┘
-    //
-    [_BASE_CO] = LAYOUT_split_3x5_2(KC_Q, KC_W, KC_F, KC_P, KC_B, KC_J, KC_L, KC_U, KC_Y, KC_SCLN, KC_A, KC_R, KC_S, KC_T, KC_G, KC_M, KC_N, KC_E, KC_I, KC_O, KC_Z, KC_X, KC_C, KC_D, KC_V, KC_K, KC_H, KC_COMM, KC_DOT, KC_SLSH, KC_LGUI, SFT_T(KC_SPC), OSM(MOD_LCTL), DF(_BASE))};
+    [_CONFIG] = LAYOUT_split_3x5_2(KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, QK_BOOT, KC_NO, KC_NO, KC_NO, KC_BSPC, KC_TRNS, MS_WHLD, MS_BTN2, MS_BTN1, MS_WHLU, MS_LEFT, MS_DOWN, MS_UP, MS_RGHT, KC_ENT, TG(4), KC_TRNS, KC_TRNS, KC_TRNS, DB_TOGG, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, DF(_BASE_CO), FALL_BASE, FALL_BASE)};
 
 #if defined(ENCODER_ENABLE) && defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
