@@ -145,7 +145,6 @@ void housekeeping_task_user(void) {
     }
 }
 
-const key_override_t grv_tilde  = ko_make_basic(MOD_MASK_GUI, KC_GRV, S(KC_GRV));
 const key_override_t eur_dollar = ko_make_basic(MOD_MASK_GUI, S(A(KC_2)), S(KC_4));
 const key_override_t alt_bspc   = ko_make_basic(MOD_MASK_ALT, KC_L, A(KC_BSPC));
 
@@ -182,10 +181,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │   {   │   [   │   (   │ ^ 🏠  │   │ $ 🔚  │   )   │   ]   │   }   │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │ `  ~  │   '   │   "   │   &   │   *   │   │       │       │       │       │ TO(3) │
+    // │  ` ~  │   '   │   "   │   &   │   *   │   │       │       │       │       │ TO(3) │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │      │ L󰘶/ 󱁐 │   │  ⌥->B │Numbers│
+    //                         │      │ L󰘶/ 󱁐 │   │ ⌥->B  │Numbers│
     //                         └───────┴───────┘   └───────┴───────┘
     [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_EXLM, KC_AT, KC_HASH, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_BSLS, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_QUOT, KC_DQT, KC_AMPR, KC_ASTR, KC_NO, KC_NO, KC_NO, KC_NO, TO(_ARROWS), CMD_BASE, KC_LSFT, ALT_FALL_BASE, TO(_NUMBERS)),
     //
