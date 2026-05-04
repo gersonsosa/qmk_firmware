@@ -19,6 +19,7 @@ enum {
 enum kc_trns_to_base {
     FALL_BASE = SAFE_RANGE,
     CMD_BASE,
+    CTRL_BASE,
     ALT_BASE,
     ALT_FALL_BASE,
 };
@@ -83,6 +84,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 layer_clear();
             }
             return false;
+        case CTRL_BASE:
+            if (record->event.pressed) {
+                register_mods(MOD_BIT(KC_LCTL));
+            } else {
+                unregister_mods(MOD_BIT(KC_LCTL));
+                layer_clear();
+            }
+            return false;
         case ALT_BASE:
             if (record->event.pressed) {
                 register_mods(MOD_BIT(KC_LALT));
@@ -99,7 +108,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_mods(MOD_BIT(KC_LALT));
             }
             return false;
-            // TODO: add a default case to return to the base layer from the first unless the keypress is backspace
     }
     return true;
 }
@@ -146,9 +154,9 @@ void housekeeping_task_user(void) {
 }
 
 const key_override_t eur_dollar = ko_make_basic(MOD_MASK_GUI, S(A(KC_2)), S(KC_4));
-const key_override_t alt_bspc   = ko_make_basic(MOD_MASK_ALT, KC_L, A(KC_BSPC));
+const key_override_t alt_bspc   = ko_make_basic(MOD_MASK_ALT, KC_P, A(KC_BSPC));
 
-const key_override_t *key_overrides[] = {&grv_tilde, &eur_dollar, &alt_bspc};
+const key_override_t *key_overrides[] = {&eur_dollar, &alt_bspc};
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // QWERTY
@@ -181,24 +189,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │   {   │   [   │   (   │ ^ 🏠  │   │ $ 🔚  │   )   │   ]   │   }   │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │  ` ~  │   '   │   "   │   &   │   *   │   │       │       │       │       │ TO(3) │
+    // │  ` ~  │   '   │   "   │   &   │   *   │   │  C-1  │  C-2  │  C-3  │       │ TO(3) │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
     //                         │      │ L󰘶/ 󱁐 │   │ ⌥->B  │Numbers│
     //                         └───────┴───────┘   └───────┴───────┘
-    [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_EXLM, KC_AT, KC_HASH, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_BSLS, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_QUOT, KC_DQT, KC_AMPR, KC_ASTR, KC_NO, KC_NO, KC_NO, KC_NO, TO(_ARROWS), CMD_BASE, KC_LSFT, ALT_FALL_BASE, TO(_NUMBERS)),
+    [_SYMBOLS] = LAYOUT_split_3x5_2(KC_ESC, KC_EXLM, KC_AT, KC_HASH, KC_EQL, KC_MINS, KC_PERC, KC_PIPE, KC_BSLS, KC_BSPC, KC_TAB, KC_LCBR, KC_LBRC, KC_LPRN, TD(CIRC_HOME), TD(DLR_END), KC_RPRN, KC_RBRC, KC_RCBR, KC_ENT, KC_GRV, KC_QUOT, KC_DQT, KC_AMPR, KC_ASTR, LCTL(KC_1), LCTL(KC_2), LCTL(KC_3), KC_NO, TO(_ARROWS), CMD_BASE, KC_LSFT, ALT_FALL_BASE, TO(_NUMBERS)),
     //
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │  ESC  │   7   │   8   │   9   │   =   │   │   -   │  BASE │  BASE │  BASE │ BSPC  │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
     // │  TAB  │   4   │   5   │   6   │  €/$  │   │  BASE │  BASE │  BASE │  BASE │ ENTER │
     // ├───────┼───────┼───────┼───────┼───────┤   ├───────┼───────┼───────┼───────┼───────┤
-    // │   0   │   1   │   2   │   3   │   *   │   │   /   │  BASE │   ,   │   .   │  L^   │
+    // │   0   │   1   │   2   │   3   │   *   │   │   /   │  BASE │   ,   │   .   │   ⌥   │
     // └───────┴───────┴───────┴───────┴───────┘   └───────┴───────┴───────┴───────┴───────┘
     //                         ┌───────┬───────┐   ┌───────┬───────┐
-    //                         │  0/  │ L󰘶/ 󱁐 │   │   ⌥   │  BASE │
+    //                         │  0/  │ L󰘶/ 󱁐 │   │   L^  │   ⌥   │
     //                         └───────┴───────┘   └───────┴───────┘
-    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_7, KC_8, KC_9, KC_EQL, KC_MINS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BSPC, KC_TAB, KC_4, KC_5, KC_6, KC_0, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ENT, KC_0, KC_1, KC_2, KC_3, KC_ASTR, KC_PSLS, KC_TRNS, KC_COMM, KC_DOT, OSM(MOD_LCTL), CMD_BASE, SFT_T(KC_SPC), ALT_BASE, FALL_BASE),
+    [_NUMBERS] = LAYOUT_split_3x5_2(KC_ESC, KC_7, KC_8, KC_9, KC_EQL, KC_MINS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BSPC, KC_TAB, KC_4, KC_5, KC_6, KC_0, FALL_BASE, FALL_BASE, FALL_BASE, FALL_BASE, KC_ENT, KC_0, KC_1, KC_2, KC_3, KC_ASTR, KC_PSLS, KC_TRNS, KC_COMM, KC_DOT, OSM(MOD_LCTL), CMD_BASE, SFT_T(KC_SPC), CTRL_BASE, ALT_BASE),
     //
     // ┌───────┬───────┬───────┬───────┬───────┐   ┌───────┬───────┬───────┬───────┬───────┐
     // │  ESC  │ MRWD  │ MFFD  │ MPLY  │ VOLU  │   │ G([)  │ G(])  │C(TB)  │RC(TAB)│ BSPC  │
